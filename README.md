@@ -265,6 +265,20 @@ npm install && npm run check
 
 Developing needs Node 22 or later, because the tests use Ink 8.
 
+### Contributing and releases
+
+- Changes go through a pull request to `main`. GitHub runs `npm run check`
+  on Node 22 and 24 for every pull request.
+- Commit titles follow [Conventional Commits](https://www.conventionalcommits.org):
+  `fix: ...` for a bug fix, `feat: ...` for a new feature, and `feat!: ...`
+  or `fix!: ...` for a change that breaks existing code. They become the
+  lines of the CHANGELOG, so write them for the people who use the package.
+- [release-please](https://github.com/googleapis/release-please) keeps a
+  "release" pull request up to date with the next version number and the
+  CHANGELOG. Merging it tags the version and publishes it to npm. Before
+  1.0.0, a `feat` or a breaking change gives a new minor version (0.x), and
+  a `fix` a new patch version.
+
 ## Licenses
 
 This package is under the MIT license (file `LICENSE`), Copyright (c) 2026

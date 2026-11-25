@@ -4,7 +4,9 @@ import { render } from 'ink-testing-library';
 import { Text, useInput } from 'ink';
 import { useTypeahead, type UseTypeaheadOptions } from '../index.js';
 
-const tick = (ms = 30) => new Promise((resolve) => setTimeout(resolve, ms));
+// Time left to Ink to read a key and redraw. 30 ms was not always enough on
+// a busy machine, and tests then failed at random.
+const tick = (ms = 100) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const toItems = (...labels: string[]) => labels.map((label) => ({ label }));
 
@@ -78,10 +80,10 @@ describe('useTypeahead', () => {
   });
 
   it('oublie les lettres après le délai', async () => {
-    const s = setup({ timeout: 60 });
+    const s = setup({ timeout: 400 });
     await tick();
     await s.press('e');
-    await tick(120);
+    await tick(800);
     await s.press('q');
     // Sans l'oubli, la recherche serait "eq" et ne trouverait rien.
     expect(s.current()).toBe('Quitter');
@@ -189,11 +191,11 @@ describe('useTypeahead', () => {
     });
 
     it('se vide et réaffiche la liste après le délai', async () => {
-      const s = setup({ timeout: 60 });
+      const s = setup({ timeout: 400 });
       await tick();
       await s.press('e');
       expect(s.query()).toBe('e');
-      await tick(120);
+      await tick(800);
       expect(s.query()).toBe('');
     });
 
@@ -256,14 +258,14 @@ describe('useTypeahead', () => {
   it('fonctionne en mode strict de React, qui monte les composants deux fois', async () => {
     const view = render(
       <React.StrictMode>
-        <Harness timeout={60} />
+        <Harness timeout={400} />
       </React.StrictMode>,
     );
     await tick();
     view.stdin.write('e');
     await tick();
     expect(view.lastFrame()).toBe('[Éditer] saisie=<e>');
-    await tick(120);
+    await tick(800);
     expect(view.lastFrame()).toBe('[Éditer] saisie=<>');
   });
 
