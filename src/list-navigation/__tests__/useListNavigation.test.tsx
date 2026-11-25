@@ -14,7 +14,9 @@ import {
 // are skipped in that run (see compat/react18).
 const inkReportsHomeEnd = process.env.INK_BEHAVIORS_COMPAT !== 'react18';
 
-const tick = (ms = 30) => new Promise((resolve) => setTimeout(resolve, ms));
+// Time left to Ink to read a key and redraw. 30 ms was not always enough on
+// a busy machine, and tests then failed at random.
+const tick = (ms = 100) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const KEY = {
   up: '\u001B[A',
