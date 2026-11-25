@@ -13,7 +13,8 @@ Status: early work, not published on npm yet. One hook so far.
 
 ## Launch
 
-One command installs nothing new and runs everything (types, tests, build):
+One command installs the dependencies, then checks the types, runs the tests
+and builds the package:
 
 ```bash
 npm install && npm run check
@@ -81,7 +82,7 @@ decides: when `handleInput` returns `true`, the key was used by the search.
 
 | Option | Type | Meaning |
 |---|---|---|
-| `items` | `{ label: string; disabled?: boolean }[]` | The items, in display order. Disabled items are skipped. Extra fields are allowed. |
+| `items` | `{ label: string; disabled?: boolean }[]` | The items, in display order. Disabled items are skipped. Your own objects with more fields (like `value`) fit when passed as a variable. |
 | `current` | `number` | Index of the item that has the cursor, or `-1`. |
 | `onMatch` | `(index: number) => void` | Called with the index to move to. |
 | `isActive` | `boolean` | `false` ignores every key. Default `true`. |
