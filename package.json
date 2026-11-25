@@ -41,6 +41,7 @@
     "hooks",
     "typeahead"
   ],
+  "author": "Philibert Gentien",
   "license": "MIT AND Apache-2.0",
   "peerDependencies": {
     "react": ">=18"

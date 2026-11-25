@@ -103,7 +103,8 @@ them also ends the search in progress.
 
 ## Licenses
 
-This package is under the [MIT license](LICENSE), **except one file**:
+This package is under the [MIT license](LICENSE), Copyright (c) 2026 Philibert
+Gentien, **except one file**:
 
 - `src/typeahead/vendor/typeahead.ts` is adapted from
   [UI SDK](https://github.com/vercel-labs/ui) (commit

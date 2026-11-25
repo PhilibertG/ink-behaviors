@@ -20,9 +20,12 @@ export interface TypeaheadItem {
   disabled?: boolean;
 }
 
-export interface UseTypeaheadOptions {
-  /** The items, in the order they are shown. */
-  items: readonly TypeaheadItem[];
+export interface UseTypeaheadOptions<T extends TypeaheadItem = TypeaheadItem> {
+  /**
+   * The items, in the order they are shown. Any object with a `label` fits:
+   * your own fields (`value`, `icon`...) are accepted and ignored.
+   */
+  items: readonly T[];
   /** Index of the item that has the cursor now, or -1 for none. */
   current: number;
   /** Called with the index of the item the typed letters lead to. */
@@ -62,11 +65,13 @@ const isPrintable = (char: string) => char >= ' ' && char !== '\u007F';
  * The hook does not listen to the keyboard itself. Call `handleInput` from
  * the list's own `useInput`, so one handler decides what each key does.
  */
-export function useTypeahead(options: UseTypeaheadOptions): UseTypeaheadResult {
+export function useTypeahead<T extends TypeaheadItem>(
+  options: UseTypeaheadOptions<T>,
+): UseTypeaheadResult {
   const { timeout, locale } = options;
 
   // Always read the latest props from the handler, without recreating it.
-  const latest = useRef(options);
+  const latest = useRef<UseTypeaheadOptions>(options);
   latest.current = options;
 
   const [query, setQuery] = useState('');
