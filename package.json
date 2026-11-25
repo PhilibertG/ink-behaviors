@@ -51,6 +51,14 @@
   ],
   "author": "Philibert Gentien",
   "license": "MIT AND Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PhilibertG/ink-behaviors.git"
+  },
+  "homepage": "https://github.com/PhilibertG/ink-behaviors#readme",
+  "bugs": {
+    "url": "https://github.com/PhilibertG/ink-behaviors/issues"
+  },
   "peerDependencies": {
     "react": ">=18"
   },
