@@ -1,6 +1,6 @@
 {
   "name": "ink-behaviors",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Unofficial community package: headless behavior hooks (keys and state, no rendering) for Ink lists and menus.",
   "type": "module",
   "main": "dist/index.cjs",
@@ -22,7 +22,8 @@
     "dist",
     "LICENSE",
     "LICENSE-APACHE-2.0",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "sideEffects": false,
   "scripts": {
@@ -30,16 +31,22 @@
     "test": "vitest run",
     "test:react18": "npm --prefix compat/react18 install --no-audit --no-fund --silent && vitest run --config compat/react18/vitest.config.ts",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm test && npm run test:react18 && npm run build"
+    "check": "npm run typecheck && npm test && npm run test:react18 && npm run build",
+    "prepublishOnly": "npm run check"
   },
   "keywords": [
-    "ink",
-    "react",
     "cli",
-    "terminal",
-    "tui",
     "headless",
     "hooks",
+    "ink",
+    "keyboard",
+    "list",
+    "listbox",
+    "menu",
+    "navigation",
+    "react",
+    "terminal",
+    "tui",
     "typeahead"
   ],
   "author": "Philibert Gentien",
