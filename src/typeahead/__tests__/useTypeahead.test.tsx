@@ -243,6 +243,30 @@ describe('useTypeahead', () => {
     });
   });
 
+  it('oublie la saisie quand isActive passe à faux', async () => {
+    const s = setup({ timeout: 10_000 });
+    await tick();
+    await s.press('e');
+    expect(s.query()).toBe('e');
+    s.rerender(<Harness timeout={10_000} isActive={false} />);
+    await tick();
+    expect(s.query()).toBe('');
+  });
+
+  it('fonctionne en mode strict de React, qui monte les composants deux fois', async () => {
+    const view = render(
+      <React.StrictMode>
+        <Harness timeout={60} />
+      </React.StrictMode>,
+    );
+    await tick();
+    view.stdin.write('e');
+    await tick();
+    expect(view.lastFrame()).toBe('[Éditer] saisie=<e>');
+    await tick(120);
+    expect(view.lastFrame()).toBe('[Éditer] saisie=<>');
+  });
+
   it('annule son minuteur quand la liste disparaît', async () => {
     const s = setup({ timeout: 10_000 });
     await tick();

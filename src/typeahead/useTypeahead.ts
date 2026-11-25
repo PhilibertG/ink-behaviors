@@ -100,6 +100,14 @@ export function useTypeahead<T extends TypeaheadItem>(
 
   const reset = useCallback(() => searchRef.current?.reset(), []);
 
+  // A list that stops listening also forgets what was being typed.
+  const isActive = options.isActive ?? true;
+  useEffect(() => {
+    if (!isActive) {
+      searchRef.current?.reset();
+    }
+  }, [isActive]);
+
   const handleInput = useCallback((input: string, key?: TypeaheadKey) => {
     const search = searchRef.current;
     const { items, current, onMatch, isActive = true } = latest.current;

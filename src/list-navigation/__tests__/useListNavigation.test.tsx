@@ -365,6 +365,20 @@ describe('useListNavigation', () => {
       expect(after.moveTo).toBe(before.moveTo);
     });
 
+    it('fonctionne en mode strict de React, qui appelle les mises à jour deux fois', async () => {
+      const view = render(
+        <React.StrictMode>
+          <Harness visibleCount={4} />
+        </React.StrictMode>,
+      );
+      await tick();
+      view.stdin.write(KEY.down);
+      await tick();
+      view.stdin.write(KEY.pageDown);
+      await tick();
+      expect(view.lastFrame()).toBe('E >F G H | ok');
+    });
+
     it('respecte initialIndex', async () => {
       const s = setup({ visibleCount: 4, initialIndex: 9 });
       await tick();
