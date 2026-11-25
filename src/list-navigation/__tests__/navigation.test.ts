@@ -92,8 +92,26 @@ describe('move', () => {
 
   it('début et fin vont au premier et au dernier élément actif', () => {
     const view = list(10, 3, [0, 9]);
-    expect(move(view, at(5, 4), { type: 'first' })).toEqual(at(1, 1));
-    expect(move(view, at(5, 4), { type: 'last' })).toEqual(at(8, 6));
+    expect(move(view, at(5, 4), { type: 'first' }).current).toBe(1);
+    expect(move(view, at(5, 4), { type: 'last' }).current).toBe(8);
+  });
+
+  it('montre les lignes désactivées du début et de la fin, que le curseur ne peut pas atteindre', () => {
+    const view = list(10, 3, [0, 9]);
+    // Sans cela, la ligne 0 resterait cachée au-dessus de la fenêtre.
+    expect(move(view, at(5, 4), { type: 'first' })).toEqual(at(1, 0));
+    expect(move(view, at(5, 4), { type: 'last' })).toEqual(at(8, 7));
+    expect(play(view, at(3, 2), 'previous', 'previous')).toEqual(at(1, 0));
+    expect(play(view, at(6, 5), 'next', 'next')).toEqual(at(8, 7));
+    // En bouclant aussi.
+    const looping = { ...view, loop: true };
+    expect(move(looping, at(8, 7), { type: 'next' })).toEqual(at(1, 0));
+    expect(move(looping, at(1, 0), { type: 'previous' })).toEqual(at(8, 7));
+    // Plus de lignes désactivées que la fenêtre : le curseur reste affiché.
+    expect(move(list(10, 3, [0, 1, 2, 3]), at(6, 5), { type: 'first' })).toEqual(at(4, 2));
+    expect(move(list(10, 3, [6, 7, 8, 9]), at(2, 0), { type: 'last' })).toEqual(at(5, 5));
+    // Dès le départ.
+    expect(settle(list(10, 3, [0]), at(0, 0))).toEqual(at(1, 0));
   });
 
   it('page suivante et page précédente avancent d’une fenêtre', () => {

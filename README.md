@@ -116,6 +116,8 @@ Keys used: up and down arrows, Page Up, Page Down, Home, End. With `ctrl`,
 
 The hook stays valid when the list changes: if it shrinks, or if the active
 item becomes disabled, the cursor goes to the nearest item it can stop on.
+Disabled rows at the top or bottom of the list are still scrolled into view,
+so they can be read even though the cursor never stops on them.
 
 ## `useTypeahead`
 
@@ -265,13 +267,13 @@ Developing needs Node 22 or later, because the tests use Ink 8.
 
 ## Licenses
 
-This package is under the [MIT license](LICENSE), Copyright (c) 2026 Philibert
-Gentien, **except one file**:
+This package is under the MIT license (file `LICENSE`), Copyright (c) 2026
+Philibert Gentien, **except one file**:
 
 - `src/typeahead/vendor/typeahead.ts` is adapted from
   [UI SDK](https://github.com/vercel-labs/ui) (commit
   `d5c6249e1a0b1df47334d3012180bfba9b9374ec`), Copyright 2026 Vercel, Inc.,
-  under the [Apache License 2.0](LICENSE-APACHE-2.0). The changes made to it
+  under the Apache License 2.0 (file `LICENSE-APACHE-2.0`). The changes made to it
   are listed at the top of the file. Its notice is kept in the built files.
 
 That is why `package.json` declares `MIT AND Apache-2.0`.

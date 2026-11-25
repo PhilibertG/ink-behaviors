@@ -213,6 +213,25 @@ describe('useListNavigation', () => {
       expect(s.rows()).toBe('C D E >F');
     });
 
+    it('garde sa place quand la liste rétrécit puis regrandit', async () => {
+      const s = setup({ visibleCount: 4 });
+      await tick();
+      await s.press(KEY.pageDown, KEY.pageDown, KEY.pageDown);
+      expect(s.current()).toBe('L');
+      await s.update({ items: letters(6) });
+      expect(s.current()).toBe('F');
+      // Sans touche entre les deux : le curseur ne retourne pas sur "L".
+      await s.update({ items: letters(12) });
+      expect(s.rows()).toBe('C D E >F');
+    });
+
+    it('affiche une ligne désactivée placée en fin de liste', async () => {
+      const s = setup({ items: letters(6, [5]), visibleCount: 3 });
+      await tick();
+      await s.press(KEY.down, KEY.down, KEY.down, KEY.down);
+      expect(s.rows()).toBe('D >E F');
+    });
+
     it('suit visibleCount quand il change', async () => {
       const s = setup({ visibleCount: 4 });
       await tick();

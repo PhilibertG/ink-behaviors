@@ -112,6 +112,12 @@ export function useListNavigation<T>(
   // What is shown is always valid for the items of this render, even when
   // the list just shrank or the active item just became disabled.
   const state = settle(view, stored);
+  // Keep the corrected position: if the list grows back, the cursor stays
+  // where it was shown instead of jumping to its old index. Setting state
+  // during render is React's way to adjust state when props change.
+  if (state !== stored) {
+    setStored(state);
+  }
 
   // Always read the latest list from the actions, without recreating them.
   const latest = useRef({ view, isActive });

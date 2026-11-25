@@ -56,7 +56,14 @@ function seek(view: ListView, from: number, step: 1 | -1) {
   return -1;
 }
 
-/** Slides the window just enough to show `current`, and keeps it in the list. */
+/**
+ * Slides the window just enough to show `current`, and keeps it in the list.
+ *
+ * Rows the cursor cannot reach must still be readable. When nothing before
+ * `current` can be stopped on, the window goes as far up as it can while
+ * showing `current`, so disabled rows at the top are displayed. The same
+ * goes for the bottom.
+ */
 function reveal(view: ListView, current: number, viewportStart: number) {
   const rows = visibleRows(view);
   let start = viewportStart;
@@ -65,6 +72,11 @@ function reveal(view: ListView, current: number, viewportStart: number) {
       start = current;
     } else if (current >= start + rows) {
       start = current - rows + 1;
+    }
+    if (seek(view, current - 1, -1) === -1) {
+      start = Math.min(start, current - rows + 1);
+    } else if (seek(view, current + 1, 1) === -1) {
+      start = Math.max(start, current);
     }
   }
   return clamp(start, 0, Math.max(view.count - rows, 0));
