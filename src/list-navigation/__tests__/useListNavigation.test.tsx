@@ -9,6 +9,11 @@ import {
   type UseListNavigationResult,
 } from '../../index.js';
 
+// Ink 5, the last Ink that runs on React 18, does not report Home and End:
+// the handler gets an empty input and no flag. The tests on these two keys
+// are skipped in that run (see compat/react18).
+const inkReportsHomeEnd = process.env.INK_BEHAVIORS_COMPAT !== 'react18';
+
 const tick = (ms = 30) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const KEY = {
@@ -118,7 +123,7 @@ describe('useListNavigation', () => {
     expect(s.current()).toBe('B');
   });
 
-  it('va au début et à la fin avec Début et Fin', async () => {
+  it.skipIf(!inkReportsHomeEnd)('va au début et à la fin avec Début et Fin', async () => {
     const s = setup({ visibleCount: 4 });
     await tick();
     await s.press(KEY.end);
@@ -143,7 +148,7 @@ describe('useListNavigation', () => {
     await tick();
     await s.press(KEY.up);
     expect(s.current()).toBe('A');
-    await s.press(KEY.end, KEY.down);
+    await s.press(KEY.down, KEY.down, KEY.down);
     expect(s.current()).toBe('C');
   });
 
@@ -165,7 +170,8 @@ describe('useListNavigation', () => {
     expect(s.current()).toBe('E');
     await s.press(KEY.up);
     expect(s.current()).toBe('B');
-    await s.press(KEY.home);
+    s.nav().first();
+    await tick();
     expect(s.current()).toBe('B');
   });
 
@@ -182,7 +188,7 @@ describe('useListNavigation', () => {
   it('accepte une liste vide', async () => {
     const s = setup({ items: [] });
     await tick();
-    await s.press(KEY.down, KEY.pageDown, KEY.end);
+    await s.press(KEY.down, KEY.pageDown, KEY.up);
     expect(s.nav()).toMatchObject({ current: -1, viewportStart: 0, viewportEnd: 0, canSelect: false });
   });
 
@@ -201,7 +207,8 @@ describe('useListNavigation', () => {
     it('suit la liste quand elle rétrécit', async () => {
       const s = setup({ visibleCount: 4 });
       await tick();
-      await s.press(KEY.end);
+      await s.press(KEY.pageDown, KEY.pageDown, KEY.pageDown);
+      expect(s.current()).toBe('L');
       await s.update({ items: letters(6) });
       expect(s.rows()).toBe('C D E >F');
     });
@@ -209,7 +216,7 @@ describe('useListNavigation', () => {
     it('suit visibleCount quand il change', async () => {
       const s = setup({ visibleCount: 4 });
       await tick();
-      await s.press(KEY.end);
+      await s.press(KEY.pageDown, KEY.pageDown, KEY.pageDown);
       await s.update({ visibleCount: 2 });
       expect(s.rows()).toBe('K >L');
       await s.update({ visibleCount: 40 });
@@ -287,8 +294,15 @@ describe('useListNavigation', () => {
     it('dit vrai pour ses touches, même au bout de la liste', async () => {
       const s = setup({ items: letters(3) });
       await tick();
-      await s.press(KEY.up, KEY.down, KEY.pageDown, KEY.pageUp, KEY.home, KEY.end);
-      expect(s.seen.mock.calls.map((call) => call[1])).toEqual([true, true, true, true, true, true]);
+      await s.press(KEY.up, KEY.down, KEY.pageDown, KEY.pageUp);
+      expect(s.seen.mock.calls.map((call) => call[1])).toEqual([true, true, true, true]);
+    });
+
+    it.skipIf(!inkReportsHomeEnd)('dit vrai pour Début et Fin', async () => {
+      const s = setup({ items: letters(3) });
+      await tick();
+      await s.press(KEY.home, KEY.end);
+      expect(s.seen.mock.calls.map((call) => call[1])).toEqual([true, true]);
     });
 
     it('laisse les lettres, Entrée et ctrl+flèche à l’appelant', async () => {

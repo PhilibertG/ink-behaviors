@@ -17,7 +17,7 @@ export interface ListNavigationKey {
   downArrow?: boolean;
   pageUp?: boolean;
   pageDown?: boolean;
-  /** Ink reports Home and End from version 6.4. */
+  /** Ink 8 reports Home and End. Ink 5 does not: there the two keys do nothing. */
   home?: boolean;
   end?: boolean;
   ctrl?: boolean;

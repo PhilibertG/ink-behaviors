@@ -1,0 +1,11 @@
+{
+  "name": "ink-behaviors-compat-react18",
+  "private": true,
+  "description": "Runs the ink-behaviors tests against React 18 and Ink 5. Not published.",
+  "type": "module",
+  "dependencies": {
+    "ink": "^5.2.1",
+    "ink-testing-library": "^4.0.0",
+    "react": "^18.3.1"
+  }
+}
