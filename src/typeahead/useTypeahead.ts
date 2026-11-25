@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createTypeahead } from './vendor/typeahead.js';
 
 /**
@@ -12,15 +12,21 @@ export interface TypeaheadKey {
   eventType?: string;
 }
 
+/** What the typeahead needs to know about an item. Extra fields are fine. */
+export interface TypeaheadItem {
+  /** The text the typed letters are compared to. */
+  label: string;
+  /** A disabled item is skipped. */
+  disabled?: boolean;
+}
+
 export interface UseTypeaheadOptions {
-  /** The text of each item, in the order they are shown. */
-  labels: readonly string[];
+  /** The items, in the order they are shown. */
+  items: readonly TypeaheadItem[];
   /** Index of the item that has the cursor now, or -1 for none. */
   current: number;
   /** Called with the index of the item the typed letters lead to. */
   onMatch: (index: number) => void;
-  /** Items the typeahead must skip, like disabled ones. */
-  isDisabled?: (index: number) => boolean;
   /** Set to false to ignore every key. @defaultValue true */
   isActive?: boolean;
   /** Milliseconds without typing before the letters are forgotten. @defaultValue 500 */
@@ -35,8 +41,11 @@ export interface UseTypeaheadResult {
    * the key: the caller must then not treat it as a shortcut of its own.
    */
   handleInput: (input: string, key?: TypeaheadKey) => boolean;
-  /** Whether letters are being collected right now. */
-  isSearching: () => boolean;
+  /**
+   * The letters typed so far, as typed, or '' when no search is in progress.
+   * The component renders again each time it changes, so it can be shown.
+   */
+  query: string;
   /** Forget the letters typed so far. */
   reset: () => void;
 }
@@ -60,29 +69,38 @@ export function useTypeahead(options: UseTypeaheadOptions): UseTypeaheadResult {
   const latest = useRef(options);
   latest.current = options;
 
+  const [query, setQuery] = useState('');
   const searchRef = useRef<ReturnType<typeof createTypeahead> | null>(null);
-  const settings = useRef({ timeout, locale });
-  if (
-    !searchRef.current ||
-    settings.current.timeout !== timeout ||
-    settings.current.locale !== locale
-  ) {
-    searchRef.current?.reset();
-    searchRef.current = createTypeahead({ timeout, locale });
-    settings.current = { timeout, locale };
-  }
 
-  // Clear the pending timer when the list goes away.
-  useEffect(() => () => searchRef.current?.reset(), []);
+  // A typeahead lives as long as its settings. When they change, or when the
+  // list goes away, its pending timer is cleared and its letters forgotten.
+  useEffect(() => {
+    let alive = true;
+    const search = createTypeahead({
+      timeout,
+      locale,
+      onQueryChange: (typed) => {
+        if (alive) {
+          setQuery(typed);
+        }
+      },
+    });
+    searchRef.current = search;
+    return () => {
+      search.reset();
+      alive = false;
+      searchRef.current = null;
+    };
+  }, [timeout, locale]);
 
   const reset = useCallback(() => searchRef.current?.reset(), []);
-  const isSearching = useCallback(() => searchRef.current?.active() ?? false, []);
 
   const handleInput = useCallback((input: string, key?: TypeaheadKey) => {
-    const search = searchRef.current!;
-    const { labels, current, onMatch, isDisabled, isActive = true } = latest.current;
+    const search = searchRef.current;
+    const { items, current, onMatch, isActive = true } = latest.current;
 
-    if (!isActive || key?.eventType === 'release') {
+    // No typeahead before the list is mounted, or after it is gone.
+    if (!search || !isActive || key?.eventType === 'release') {
       return false;
     }
 
@@ -98,12 +116,12 @@ export function useTypeahead(options: UseTypeaheadOptions): UseTypeaheadResult {
 
     // Search only among the items that can be reached.
     const reachable: number[] = [];
-    for (let index = 0; index < labels.length; index++) {
-      if (!isDisabled?.(index)) {
+    items.forEach((item, index) => {
+      if (!item.disabled) {
         reachable.push(index);
       }
-    }
-    const reachableLabels = reachable.map((index) => labels[index]!);
+    });
+    const reachableLabels = reachable.map((index) => items[index]!.label);
     // Position of the cursor among them, or of the last reachable item before it.
     let position = -1;
     for (let i = 0; i < reachable.length && reachable[i]! <= current; i++) {
@@ -128,5 +146,5 @@ export function useTypeahead(options: UseTypeaheadOptions): UseTypeaheadResult {
     return true;
   }, []);
 
-  return { handleInput, isSearching, reset };
+  return { handleInput, query, reset };
 }

@@ -6,7 +6,9 @@ import { useTypeahead, type UseTypeaheadOptions } from '../index.js';
 
 const tick = (ms = 30) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const LABELS = ['Annuler', 'Éditer', 'Envoyer', 'Jeter', 'Quitter'];
+const toItems = (...labels: string[]) => labels.map((label) => ({ label }));
+
+const ITEMS = toItems('Annuler', 'Éditer', 'Envoyer', 'Jeter', 'Quitter');
 
 type HarnessProps = Partial<UseTypeaheadOptions> & {
   seen?: (input: string, used: boolean) => void;
@@ -15,13 +17,13 @@ type HarnessProps = Partial<UseTypeaheadOptions> & {
 // A list reduced to the minimum: an index, and the hook fed from useInput.
 function Harness({ seen, ...options }: HarnessProps) {
   const [current, setCurrent] = useState(options.current ?? 0);
-  const labels = options.labels ?? LABELS;
-  const typeahead = useTypeahead({ labels, onMatch: setCurrent, ...options, current });
+  const items = options.items ?? ITEMS;
+  const typeahead = useTypeahead({ items, onMatch: setCurrent, ...options, current });
   useInput((input, key) => {
     const used = typeahead.handleInput(input, key);
     seen?.(input, used);
   });
-  return <Text>{`[${labels[current]}] ${typeahead.isSearching() ? 'recherche' : 'repos'}`}</Text>;
+  return <Text>{`[${items[current]?.label}] saisie=<${typeahead.query}>`}</Text>;
 }
 
 function setup(props: HarnessProps = {}) {
@@ -34,7 +36,8 @@ function setup(props: HarnessProps = {}) {
     }
   };
   const current = () => /\[(.*)\]/.exec(view.lastFrame() ?? '')?.[1];
-  return { ...view, seen, press, current };
+  const query = () => /<(.*)>/.exec(view.lastFrame() ?? '')?.[1];
+  return { ...view, seen, press, current, query };
 }
 
 afterEach(() => {
@@ -85,7 +88,9 @@ describe('useTypeahead', () => {
   });
 
   it('saute les éléments désactivés', async () => {
-    const s = setup({ isDisabled: (index) => index === 1 });
+    const s = setup({
+      items: ITEMS.map((item, index) => ({ ...item, disabled: index === 1 })),
+    });
     await tick();
     await s.press('e');
     expect(s.current()).toBe('Envoyer');
@@ -116,7 +121,7 @@ describe('useTypeahead', () => {
   });
 
   it('Espace seul reste à l’appelant, mais continue une recherche', async () => {
-    const s = setup({ labels: ['Ouvrir', 'Ne pas ouvrir', 'Nettoyer'] });
+    const s = setup({ items: toItems('Ouvrir', 'Ne pas ouvrir', 'Nettoyer') });
     await tick();
     await s.press(' ');
     expect(s.seen).toHaveBeenLastCalledWith(' ', false);
@@ -128,10 +133,10 @@ describe('useTypeahead', () => {
   it('traite un texte reçu en un seul morceau comme une suite de lettres', async () => {
     const onMatch = vi.fn();
     function Direct() {
-      const typeahead = useTypeahead({ labels: LABELS, current: 0, onMatch });
+      const typeahead = useTypeahead({ items: ITEMS, current: 0, onMatch });
       React.useEffect(() => {
         typeahead.handleInput('en');
-      }, [typeahead]);
+      }, [typeahead.handleInput]);
       return <Text>direct</Text>;
     }
     render(<Direct />);
@@ -148,15 +153,94 @@ describe('useTypeahead', () => {
   });
 
   it('respecte la langue passée en option', async () => {
-    const labels = ['Zèbre', 'Äpple', 'Apa'];
-    const sv = setup({ labels, locale: 'sv' });
+    const items = toItems('Zèbre', 'Äpple', 'Apa');
+    const sv = setup({ items, locale: 'sv' });
     await tick();
     await sv.press('a');
     expect(sv.current()).toBe('Apa');
-    const fr = setup({ labels, locale: 'fr' });
+    const fr = setup({ items, locale: 'fr' });
     await tick();
     await fr.press('a');
     expect(fr.current()).toBe('Äpple');
+  });
+
+  it('accepte des éléments qui portent d’autres champs', async () => {
+    // The shape of a Select option: the hook only reads label and disabled.
+    const options = [
+      { label: 'Un', value: 1 },
+      { label: 'Deux', value: 2 },
+    ];
+    const s = setup({ items: options });
+    await tick();
+    await s.press('d');
+    expect(s.current()).toBe('Deux');
+  });
+
+  describe('query', () => {
+    it('donne les lettres telles qu’elles ont été tapées', async () => {
+      const s = setup();
+      await tick();
+      expect(s.query()).toBe('');
+      await s.press('É');
+      expect(s.query()).toBe('É');
+      expect(s.current()).toBe('Éditer');
+      await s.press('n');
+      expect(s.query()).toBe('Én');
+    });
+
+    it('se vide et réaffiche la liste après le délai', async () => {
+      const s = setup({ timeout: 60 });
+      await tick();
+      await s.press('e');
+      expect(s.query()).toBe('e');
+      await tick(120);
+      expect(s.query()).toBe('');
+    });
+
+    it('se vide quand une autre touche arrive', async () => {
+      const s = setup();
+      await tick();
+      await s.press('e', '\u001B[B');
+      expect(s.query()).toBe('');
+    });
+
+    it('se vide avec reset()', async () => {
+      let reset = () => {};
+      function WithReset() {
+        const typeahead = useTypeahead({ items: ITEMS, current: 0, onMatch: () => {} });
+        reset = typeahead.reset;
+        useInput((input, key) => void typeahead.handleInput(input, key));
+        return <Text>{`<${typeahead.query}>`}</Text>;
+      }
+      const view = render(<WithReset />);
+      await tick();
+      view.stdin.write('e');
+      await tick();
+      expect(view.lastFrame()).toBe('<e>');
+      reset();
+      await tick();
+      expect(view.lastFrame()).toBe('<>');
+    });
+
+    it('garde les lettres sans correspondance, tant que le délai court', async () => {
+      const s = setup();
+      await tick();
+      await s.press('z', 'z');
+      expect(s.query()).toBe('zz');
+      expect(s.current()).toBe('Annuler');
+    });
+
+    it('repart de zéro quand timeout ou locale change', async () => {
+      const s = setup({ timeout: 10_000 });
+      await tick();
+      await s.press('e');
+      expect(s.query()).toBe('e');
+      s.rerender(<Harness timeout={5_000} />);
+      await tick();
+      expect(s.query()).toBe('');
+      await s.press('q');
+      expect(s.current()).toBe('Quitter');
+    });
   });
 
   it('annule son minuteur quand la liste disparaît', async () => {

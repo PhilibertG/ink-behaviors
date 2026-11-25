@@ -20,7 +20,9 @@
  *   - the DOM helpers `textOf`, `labelOf` and `isTypeaheadKey` are left out,
  *     as is everything in match.ts that is not needed to fold a label;
  *   - `search` also exposes `normalize`, labels are typed `readonly`, and the
- *     code is reformatted (quotes, semicolons).
+ *     code is reformatted (quotes, semicolons);
+ *   - the characters as they were typed are kept next to the folded query,
+ *     and the new `onQueryChange` option is called each time they change.
  */
 
 // Letters NFD can't take apart, like ø or ł, are tried against these.
@@ -109,6 +111,11 @@ interface TypeaheadOptions {
   timeout?: number;
   /** A BCP 47 language tag, like "fr" or "sv". Defaults to the runtime's locale. */
   locale?: string;
+  /**
+   * Called with the characters typed so far, as typed, each time they change:
+   * after a key, and with '' when the query clears.
+   */
+  onQueryChange?: (typed: string) => void;
 }
 
 /**
@@ -123,22 +130,32 @@ interface TypeaheadOptions {
  * -1, with `reset()`, `active()` (whether a query is in progress, so Space
  * continues it rather than activating) and `normalize(text)`.
  */
-function createTypeahead({ timeout = 500, locale }: TypeaheadOptions = {}) {
+function createTypeahead({
+  timeout = 500,
+  locale,
+  onQueryChange,
+}: TypeaheadOptions = {}) {
   const folder = createFolder(locale);
   // Comparable form of a label: case and accents that don't count in the
   // locale are gone, and so is surrounding space. "Éditer" matches "e".
   const normalize = (text: string) => folder.fold(text).trim();
 
   let query = '';
+  let typed = '';
   let lastKey = '';
   let stepping = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   function reset() {
+    const changed = typed !== '';
     query = '';
+    typed = '';
     lastKey = '';
     stepping = false;
     clearTimeout(timer);
+    if (changed) {
+      onQueryChange?.('');
+    }
   }
 
   function scan(labels: readonly string[], prefix: string, start: number) {
@@ -163,6 +180,8 @@ function createTypeahead({ timeout = 500, locale }: TypeaheadOptions = {}) {
     stepping = char === lastKey && (stepping || query.length === 1);
     lastKey = char;
     query += char;
+    typed += key;
+    onQueryChange?.(typed);
 
     if (stepping) {
       const whole = scan(labels, query, Math.max(current, 0));
